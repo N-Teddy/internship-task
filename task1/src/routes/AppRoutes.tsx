@@ -14,6 +14,7 @@ import Todos from "@/pages/Todos";
 import Recipe from "@/pages/Recipe";
 import Users from "@/pages/Users";
 import PostDetails from "@/pages/Post/PostDetails";
+import Carts from "@/pages/Cart";
 // import EditProduct from "@/pages/Product/EditProduct"; // New import
 
 const AppRoutes: React.FC = () => {
@@ -38,8 +39,9 @@ const AppRoutes: React.FC = () => {
 
                 {/* Other Routes */}
                 <Route path="/todos" element={<Todos />} />
-                <Route path="/recipes" element={<Recipe />} />
+                <Route path="/recipe" element={<Recipe />} />
                 <Route path="/users" element={<Users />} />
+                <Route path="/cart" element={ <Carts /> } />
             </Route>
 
             {/* BasicLayout pages */}
