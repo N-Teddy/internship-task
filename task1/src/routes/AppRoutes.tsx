@@ -1,20 +1,19 @@
 import { Routes, Route } from "react-router-dom";
+import { Navigate } from 'react-router-dom'
 import Login from "@/pages/auth/Login";
 import Home from "@/pages/dashboard/Home";
 import BasicLayout from "@/layouts/BasicLayout";
 import DashboardLayout from "@/layouts/DashboardLayout";
-import { Navigate } from 'react-router-dom'
 import ProductList from "@/pages/Product/ProductList";
 import PostList from "@/pages/Post/PostList";
-import Category from "@/pages/Product/Category";
 import ProductDetails from "@/pages/Product/ProductDetails";
 import CreatePost from "@/pages/Post/CreatePost";
 import CreateProduct from "@/pages/Product/CreateProduct";
-import Todos from "@/pages/Todos";
-import Recipe from "@/pages/Recipe";
 import Users from "@/pages/Users";
 import PostDetails from "@/pages/Post/PostDetails";
 import Carts from "@/pages/Cart";
+import Profile from "@/pages/Profile";
+
 // import EditProduct from "@/pages/Product/EditProduct"; // New import
 
 const AppRoutes: React.FC = () => {
@@ -26,7 +25,6 @@ const AppRoutes: React.FC = () => {
 
                 {/* Product Routes */}
                 <Route path="/product-list" element={<ProductList />} />
-                <Route path="/product-category" element={<Category />} />
                 <Route path="/product-details/:productName" element={<ProductDetails />} />
                 <Route path="/create-product" element={<CreateProduct />} />
                 {/* <Route path="/edit-product/:id" element={<EditProduct />} /> New route */}
@@ -38,10 +36,9 @@ const AppRoutes: React.FC = () => {
                 <Route path="/post-details/:id" element={<PostDetails />} />
 
                 {/* Other Routes */}
-                <Route path="/todos" element={<Todos />} />
-                <Route path="/recipe" element={<Recipe />} />
                 <Route path="/users" element={<Users />} />
-                <Route path="/cart" element={ <Carts /> } />
+                <Route path="/cart" element={<Carts />} />
+                <Route path="/profile" element={<Profile />} />
             </Route>
 
             {/* BasicLayout pages */}

@@ -1,19 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import * as yup from "yup";
-import axios from "axios"// Import the image uploader component
+import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import ImageUploader from "@/components/ImageUploader/Imageuploader";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// ✅ Define Form Schema Validation
 const productSchema = yup.object().shape({
     title: yup.string().required("Product name is required"),
     description: yup.string().required("Description is required"),
@@ -25,14 +26,36 @@ const productSchema = yup.object().shape({
     images: yup.array().min(1, "At least one image is required"),
 });
 
-// ✅ Fetch Categories Using TanStack Query
 const fetchCategories = async () => {
-    const res = await axios.get("https://dummyjson.com/products/categories");
-    return res.data;
+    try {
+        const { data } = await axios.get("https://dummyjson.com/products/category-list");
+        return data;
+    } catch (error) {
+        throw new Error("Failed to fetch categories");
+    }
+};
+
+const createProduct = async (productData: any) => {
+    try {
+        const response = await axios.post("https://dummyjson.com/products/add", {
+            ...productData,
+            images: productData.images.map((file: File) => file.name) // Convert files to image names for dummy API
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error("Failed to create product");
+    }
 };
 
 export default function CreateProduct() {
-    const { register, handleSubmit, control, setValue, formState: { errors } } = useForm({
+    const {
+        register,
+        handleSubmit,
+        control,
+        setValue,
+        reset,
+        formState: { errors }
+    } = useForm({
         resolver: yupResolver(productSchema),
         defaultValues: {
             title: "",
@@ -46,108 +69,206 @@ export default function CreateProduct() {
         },
     });
 
-    const { data: categories, isLoading } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+    // Fetch categories
+    const {
+        data: categories,
+        isLoading: isLoadingCategories,
+        isError: isCategoriesError,
+        error: categoriesError
+    } = useQuery({
+        queryKey: ["categories"],
+        queryFn: fetchCategories,
+        retry: 1,
+        staleTime: 1000 * 60 * 5,
+    });
 
-    // ✅ Handle Image Selection
+    // Create product mutation
+    const createMutation = useMutation({
+        mutationFn: createProduct,
+        onSuccess: (data) => {
+            toast.success("Product created successfully!");
+            reset(); // Reset form after successful submission
+            console.log("Created product:", data);
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Failed to create product");
+        }
+    });
+
     const handleImagesSelected = (files: File[]) => {
         setValue("images", files);
     };
 
-    // ✅ Handle Form Submission
     const onSubmit = (data: any) => {
-        console.log("Product Data:", data);
-        alert("Product Created Successfully!");
+        createMutation.mutate(data);
     };
 
     return (
-        <Card className="p-6 max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">Create Product</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* Product Name */}
-                <div>
-                    <Label>Product Name</Label>
-                    <Input placeholder="Enter product name" {...register("title")} />
-                    {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
+        <div className="container mx-auto py-8 max-w-4xl">
+            <div className="space-y-6">
+                <div className="space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tight">Create New Product</h1>
+                    <p className="text-muted-foreground">
+                        Fill in the details below to add a new product to your inventory
+                    </p>
                 </div>
 
-                {/* Description */}
-                <div>
-                    <Label>Description</Label>
-                    <Input placeholder="Enter product description" {...register("description")} />
-                    {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
-                </div>
+                <Separator className="my-6" />
 
-                {/* Price */}
-                <div className="flex gap-4">
-                    <div className="flex-1">
-                        <Label>Price ($)</Label>
-                        <Input type="number" {...register("price")} />
-                        {errors.price && <p className="text-red-500 text-sm">{errors.price.message}</p>}
+                {isCategoriesError && (
+                    <div className="p-4 bg-red-100 text-red-700 rounded-lg">
+                        {categoriesError.message || "Failed to load categories. Please try again later."}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    {/* Basic Information Section */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Basic Information</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Product Name */}
+                            <div className="space-y-2">
+                                <Label htmlFor="title">Product Name *</Label>
+                                <Input
+                                    id="title"
+                                    placeholder="Enter product name"
+                                    {...register("title")}
+                                    className={errors.title ? "border-red-500" : ""}
+                                />
+                                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
+                            </div>
+
+                            {/* Brand */}
+                            <div className="space-y-2">
+                                <Label htmlFor="brand">Brand *</Label>
+                                <Input
+                                    id="brand"
+                                    placeholder="Enter brand name"
+                                    {...register("brand")}
+                                    className={errors.brand ? "border-red-500" : ""}
+                                />
+                                {errors.brand && <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>}
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description *</Label>
+                            <Input
+                                id="description"
+                                placeholder="Enter product description"
+                                {...register("description")}
+                                className={errors.description ? "border-red-500" : ""}
+                            />
+                            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+                        </div>
                     </div>
 
-                    <div className="flex-1">
-                        <Label>Discount (%)</Label>
-                        <Input type="number" {...register("discountPercentage")} />
-                        {errors.discountPercentage && <p className="text-red-500 text-sm">{errors.discountPercentage.message}</p>}
+                    <Separator className="my-6" />
+
+                    {/* Pricing & Inventory Section */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Pricing & Inventory</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Price */}
+                            <div className="space-y-2">
+                                <Label htmlFor="price">Price ($) *</Label>
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    {...register("price")}
+                                    className={errors.price ? "border-red-500" : ""}
+                                />
+                                {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>}
+                            </div>
+
+                            {/* Discount */}
+                            <div className="space-y-2">
+                                <Label htmlFor="discountPercentage">Discount (%) *</Label>
+                                <Input
+                                    id="discountPercentage"
+                                    type="number"
+                                    {...register("discountPercentage")}
+                                    className={errors.discountPercentage ? "border-red-500" : ""}
+                                />
+                                {errors.discountPercentage && <p className="text-red-500 text-sm mt-1">{errors.discountPercentage.message}</p>}
+                            </div>
+
+                            {/* Stock */}
+                            <div className="space-y-2">
+                                <Label htmlFor="stock">Stock Quantity *</Label>
+                                <Input
+                                    id="stock"
+                                    type="number"
+                                    {...register("stock")}
+                                    className={errors.stock ? "border-red-500" : ""}
+                                />
+                                {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock.message}</p>}
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                {/* Stock */}
-                <div>
-                    <Label>Stock Quantity</Label>
-                    <Input type="number" {...register("stock")} />
-                    {errors.stock && <p className="text-red-500 text-sm">{errors.stock.message}</p>}
-                </div>
+                    <Separator className="my-6" />
 
-                {/* Category */}
-                <div>
-                    <Label>Category</Label>
-                    <Controller
-                        control={control}
-                        name="category"
-                        render={({ field }) => (
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {isLoading ? (
-                                        <p className="px-4 py-2">Loading categories...</p>
-                                    ) : (
-                                        categories?.map((cat) =>
-                                            cat.name && ( // Ensure name exists
-                                                <SelectItem key={cat.slug} value={cat.name}>
-                                                    {cat.name}  {/* 🔹 Fix: Render cat.name instead of full object */}
-                                                </SelectItem>
-                                            )
-                                        )
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        )}
+                    {/* Category & Images Section */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Category & Media</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Category */}
+                            <div className="space-y-2">
+                                <Label>Category *</Label>
+                                {isLoadingCategories ? (
+                                    <Skeleton className="h-10 w-full rounded-md" />
+                                ) : (
+                                    <Controller
+                                        control={control}
+                                        name="category"
+                                        render={({ field }) => (
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                value={field.value}
+                                                disabled={isLoadingCategories}
+                                            >
+                                                <SelectTrigger className={errors.category ? "border-red-500" : ""}>
+                                                    <SelectValue placeholder="Select a category" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {categories?.map((category: string) => (
+                                                        <SelectItem key={category} value={category}>
+                                                            {category}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                )}
+                                {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <ImageUploader
+                        onImagesSelected={handleImagesSelected}
+                        hasError={!!errors.images}
                     />
-                    {errors.category && <p className="text-red-500 text-sm">{errors.category.message}</p>}
-                </div>
+                    {errors.images && <p className="text-red-500 text-sm mt-1">{errors.images.message}</p>}
 
-                {/* Brand */}
-                <div>
-                    <Label>Brand</Label>
-                    <Input placeholder="Enter brand name" {...register("brand")} />
-                    {errors.brand && <p className="text-red-500 text-sm">{errors.brand.message}</p>}
-                </div>
+                    <Separator className="my-6" />
 
-                {/* Image Upload (Now in a Separate Component) */}
-                <div>
-                    <Label>Product Images</Label>
-                    <ImageUploader onImagesSelected={handleImagesSelected} />
-                    {errors.images && <p className="text-red-500 text-sm">{errors.images.message}</p>}
-                </div>
-
-                {/* Submit Button */}
-                <Button type="submit" className="w-full">
-                    Create Product
-                </Button>
-            </form>
-        </Card>
+                    {/* Submit Button */}
+                    <div className="flex justify-end">
+                        <Button
+                            type="submit"
+                            size="lg"
+                            className="w-full md:w-auto"
+                            disabled={createMutation.isPending}
+                        >
+                            {createMutation.isPending ? "Creating..." : "Create Product"}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </div>
     );
 }

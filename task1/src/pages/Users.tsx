@@ -27,7 +27,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserFilter } from "@/components/UserFilter/UserFilter";
 
 interface User {
     id: number;
@@ -93,8 +92,6 @@ export default function Users() {
             </div>
 
             <div className="flex flex-col md:flex-row gap-4">
-                <UserFilter onFilterChange={setFilters} />
-
                 <Card className="flex-1">
                     <CardHeader>
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
