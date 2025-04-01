@@ -6,7 +6,6 @@ import BasicLayout from "@/layouts/BasicLayout";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import ProductList from "@/pages/Product/ProductList";
 import PostList from "@/pages/Post/PostList";
-import ProductDetails from "@/pages/Product/ProductDetails";
 import CreatePost from "@/pages/Post/CreatePost";
 import CreateProduct from "@/pages/Product/CreateProduct";
 import Users from "@/pages/Users";
@@ -25,7 +24,6 @@ const AppRoutes: React.FC = () => {
 
                 {/* Product Routes */}
                 <Route path="/product-list" element={<ProductList />} />
-                <Route path="/product-details/:productName" element={<ProductDetails />} />
                 <Route path="/create-product" element={<CreateProduct />} />
                 {/* <Route path="/edit-product/:id" element={<EditProduct />} /> New route */}
 
