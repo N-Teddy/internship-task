@@ -28,7 +28,6 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
 
     // Function to store the user session in localStorage
     const storeSession = (user: User) => {
@@ -84,8 +83,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     // Perform login using the mutation
-    const loginMutation = useMutation({
-        mutationFn: async (data: { username: string; password: string }) => {
+    interface LoginData {
+        username: string;
+        password: string;
+    }
+
+    interface LoginResponse extends User {
+        tokenExpiration: number;
+    }
+
+    const loginMutation = useMutation<LoginResponse, Error, LoginData>({
+        mutationFn: async (data: LoginData) => {
             const res = await fetch("https://dummyjson.com/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -96,12 +104,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 throw new Error("Invalid username or password");
             }
 
-            const user = await res.json();
+            const user: User = await res.json();
 
             // Set session expiration (4 hours from now)
             const expirationTime = Date.now() + 4 * 60 * 60 * 1000; // 4 hours
 
-            const userWithExpiration = {
+            const userWithExpiration: LoginResponse = {
                 ...user,
                 tokenExpiration: expirationTime,
             };
@@ -110,7 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             storeSession(userWithExpiration);
             navigate("/home");
         },
-        onError: (error) => {
+        onError: (error: Error) => {
             console.error(error);
         },
     });
